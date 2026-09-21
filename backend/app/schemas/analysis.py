@@ -1,5 +1,13 @@
 from pydantic import BaseModel, Field
 from typing import Dict, Any, Optional
+from enum import Enum
+from datetime import datetime
+
+class AnalysisStatus(str, Enum):
+    pending = "pending"
+    processing = "processing"
+    completed = "completed"
+    error = "error"
 
 class AnalysisResult(BaseModel):
     prediction: str = Field(..., description="real | fake | synthetic | uncertain")
@@ -9,7 +17,12 @@ class AnalysisResult(BaseModel):
     evidence: Dict[str, Any] = Field(default_factory=dict, description="Modality-specific evidence (e.g. heatmap, suspicious_frames)")
     processing_time_ms: int = Field(..., description="Processing time in milliseconds")
 
-class AnalyzeRequest(BaseModel):
-    media_url: Optional[str] = None
+class AnalysisRecord(BaseModel):
+    id: str = Field(..., description="Unique analysis ID (UUID)")
+    filename: str = Field(..., description="Original name of the uploaded file")
     media_type: str = Field(..., description="image | video | audio")
-    # For a real implementation, we would also handle file uploads (multipart/form-data)
+    status: AnalysisStatus = Field(default=AnalysisStatus.pending)
+    result: Optional[AnalysisResult] = None
+    error_message: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)

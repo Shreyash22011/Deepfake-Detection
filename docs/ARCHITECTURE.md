@@ -15,9 +15,14 @@ The platform follows a standard client-server architecture with separation of co
 1. **Separation of Concerns**: Frontend handles only UI/UX. Backend handles business logic and API routing. ML modules handle only inference and evidence extraction.
 2. **Standardized Contracts**: ML modules must return results conforming to a unified contract, regardless of the underlying model or modality.
 3. **Modularity**: New ML models can be plugged in without changing the core backend API or frontend architecture.
-4. **Asynchronous Processing**: (Planned) Media processing will eventually move to an asynchronous task queue (e.g., Celery or background tasks) to avoid blocking the main API thread during heavy inference.
+4. **Abstract Interfaces**: Modality-specific analyzers (Image/Video/Audio) inherit from a `BaseAnalyzer` interface. This allows developers to easily swap out a mock analyzer for a real ML implementation.
+5. **Asynchronous Processing**: (Planned) Media processing will eventually move to an asynchronous task queue (e.g., Celery or background tasks) to avoid blocking the main API thread during heavy inference.
 
-## Directory Structure
+## Backend Data Flow
+1. **API Route** (`POST /api/analyze`): Receives `UploadFile`.
+2. **Analysis Service** (`AnalysisService`): Validates file, determines media type, creates MongoDB `AnalysisRecord` (status: pending).
+3. **Analyzer Interface** (`BaseAnalyzer`): Routes the file to the correct analyzer implementation.
+4. **Database** (`motor`): Updates the `AnalysisRecord` with status `completed` and the final `AnalysisResult`.
 - `frontend/`: Next.js web application.
 - `backend/`: FastAPI application.
 - `ml/`: Subdirectories for `image`, `video`, and `audio` machine learning models.

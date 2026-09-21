@@ -47,7 +47,11 @@ Deepfake Detection and Classification from Image and Video using Deep Learning T
 - Frontend requires `.env.local` with `NEXT_PUBLIC_API_URL` pointing to the backend.
 
 ## Implementation Status
-- **Phase 1 (Complete)**: Initial repository setup, API contracts, frontend/backend boilerplate.
-- **Phase 2 (Upcoming)**: ML model integration and database connectivity.
+- **Phase 1 & 2 (Complete)**: Initial repository setup, API contracts, full frontend UI shell.
+- **Phase 3 (Complete)**: Backend orchestration, MongoDB database integration, and `BaseAnalyzer` abstraction layer with mock models.
+- **Phase 4 (Upcoming)**: ML Prototyping.
 
-See `docs/PROJECT_STATUS.md` for more details.
+### Note for ML Team
+The backend architecture is currently solid and ready for deep learning integration. You can immediately begin implementing real PyTorch/TensorFlow models by replacing the logic in `backend/app/services/analyzers/image_analyzer.py`, `video_analyzer.py`, and `audio_analyzer.py`. The `BaseAnalyzer` contract and `AnalysisResult` schemas are finalized and stable.
+
+See `docs/PROJECT_STATUS.md` for more details on Technical Debt and Known Issues before proceeding.

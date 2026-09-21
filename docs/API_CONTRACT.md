@@ -14,27 +14,46 @@ Checks if the backend is running.
 
 ### `POST /api/analyze`
 Submits media for analysis.
-**Request Body:**
+**Request:** `multipart/form-data`
+- `file`: The media file to analyze (image, video, audio).
+
+**Response:** `AnalysisRecord`
 ```json
 {
-  "media_url": "optional string or file upload depending on implementation",
-  "media_type": "image | video | audio"
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "filename": "video.mp4",
+  "media_type": "video",
+  "status": "completed",
+  "result": {
+    "prediction": "fake",
+    "confidence": 0.88,
+    "model_name": "MockVideoModel",
+    "model_version": "1.1.0",
+    "evidence": {
+      "suspicious_frames": [12, 45, 112]
+    },
+    "processing_time_ms": 2000
+  },
+  "error_message": null,
+  "created_at": "2026-09-21T12:00:00Z",
+  "updated_at": "2026-09-21T12:00:02Z"
 }
 ```
-**Response:** `AnalysisResult` (see below)
 
 ### `GET /api/analyses`
-Retrieves a list of previous analyses.
+Retrieves a list of previous analyses from MongoDB.
+**Response:** `List[AnalysisRecord]`
 
 ### `GET /api/analyses/{analysis_id}`
-Retrieves details of a specific analysis.
+Retrieves details of a specific analysis from MongoDB.
+**Response:** `AnalysisRecord`
 
 ### `GET /api/reports/{analysis_id}`
 Retrieves or generates a PDF report for a specific analysis.
 
 ## Model Result Contract (`AnalysisResult`)
 
-All ML models, regardless of modality (image, video, audio), must eventually return data conceptually equivalent to the following schema:
+All ML models, regardless of modality (image, video, audio), must implement `BaseAnalyzer` and return data conceptually equivalent to the following schema:
 
 ```json
 {

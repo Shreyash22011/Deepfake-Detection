@@ -4,4 +4,8 @@ pydantic
 pydantic-settings
 python-dotenv
 motor
+python-multipart
 pytest
+pytest-asyncio
+mongomock-motor
+httpx
