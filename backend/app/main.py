@@ -1,0 +1,28 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from app.api.endpoints import health, analyze, analyses, reports
+
+app = FastAPI(
+    title="AI Media Authenticity Platform API",
+    description="API for Deepfake Detection and Classification",
+    version="1.0.0",
+)
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, replace with specific origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include Routers
+app.include_router(health.router, prefix="/api", tags=["health"])
+app.include_router(analyze.router, prefix="/api", tags=["analyze"])
+app.include_router(analyses.router, prefix="/api", tags=["analyses"])
+app.include_router(reports.router, prefix="/api", tags=["reports"])
+
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to the AI Media Authenticity Platform API"}
