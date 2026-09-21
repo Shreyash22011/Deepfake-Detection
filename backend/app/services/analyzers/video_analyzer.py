@@ -1,26 +1,38 @@
 from app.services.analyzers.base import BaseAnalyzer
 from app.schemas.analysis import AnalysisResult
 import asyncio
-import time
+import sys
+import os
+
+# Ensure the root project directory is in the Python path so we can import ml module
+root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../.."))
+if root_dir not in sys.path:
+    sys.path.append(root_dir)
+
+from ml.video.inference import run_inference
 
 class VideoAnalyzer(BaseAnalyzer):
     async def analyze(self, file_path: str, content_type: str) -> AnalysisResult:
-        # Mock processing time (longer for video)
-        start_time = time.time()
-        await asyncio.sleep(2.0)
+        # Run inference in a threadpool to avoid blocking the asyncio event loop
+        # since PyTorch and OpenCV operations are synchronous CPU/GPU bound.
+        loop = asyncio.get_running_loop()
         
-        processing_time = int((time.time() - start_time) * 1000)
+        # Determine the path to config.yaml relative to ml module
+        config_path = os.path.join(root_dir, "ml", "video", "config.yaml")
+        
+        result_dict = await loop.run_in_executor(
+            None, 
+            lambda: run_inference(file_path, checkpoint_path=None, config_path=config_path)
+        )
 
-        # Mock result for Video
+        if result_dict.get("prediction") == "error":
+            raise RuntimeError(result_dict.get("error", "Unknown inference error"))
+
         return AnalysisResult(
-            prediction="fake",
-            confidence=0.88,
-            model_name="MockVideoModel",
-            model_version="1.1.0",
-            evidence={
-                "suspicious_frames": [12, 45, 112],
-                "temporal_inconsistencies": "Found unnatural face morphing between frames 40-50",
-                "audio_visual_sync": "0.15s delay detected"
-            },
-            processing_time_ms=processing_time
+            prediction=result_dict.get("prediction", "uncertain"),
+            confidence=result_dict.get("confidence", 0.0),
+            model_name=result_dict.get("model_name", "UnknownModel"),
+            model_version=result_dict.get("model_version", "unknown"),
+            evidence=result_dict.get("evidence", {}),
+            processing_time_ms=result_dict.get("processing_time_ms", 0)
         )

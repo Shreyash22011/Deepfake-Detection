@@ -9,3 +9,12 @@ pytest
 pytest-asyncio
 mongomock-motor
 httpx
+
+# ML Dependencies
+torch
+torchvision
+opencv-python-headless
+facenet-pytorch
+pyyaml
+Pillow
+numpy
