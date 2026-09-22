@@ -25,8 +25,8 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 class AnalysisService:
     @staticmethod
     def _determine_media_type(content_type: str, filename: str) -> str:
-        content_type = content_type.lower()
-        filename = filename.lower()
+        content_type = content_type.lower() if content_type else ""
+        filename = filename.lower() if filename else ""
         
         if content_type.startswith("image/") or filename.endswith((".jpg", ".jpeg", ".png", ".webp")):
             return "image"
