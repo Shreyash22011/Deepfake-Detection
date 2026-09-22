@@ -12,24 +12,72 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
   const resolvedParams = await params;
   const analysisId = resolvedParams.id;
 
+  // Fetch data from backend
+  let apiData = null;
+  let errorMsg = null;
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+  try {
+    const res = await fetch(`${API_URL}/api/analyses/${analysisId}`, { cache: 'no-store' });
+    if (!res.ok) {
+      errorMsg = "Failed to fetch analysis result.";
+    } else {
+      apiData = await res.json();
+    }
+  } catch (e) {
+    errorMsg = "Network error. Is the backend running?";
+  }
+
+  // If there's an error, or the result is still processing, show a fallback UI
+  if (errorMsg) {
+    return <div className="text-red-500 mt-10 text-center">{errorMsg}</div>;
+  }
+
+  if (!apiData) {
+    return <div className="mt-10 text-center">Loading...</div>;
+  }
+
+  if (apiData.status === "processing" || apiData.status === "pending") {
+    return (
+      <div className="max-w-6xl mx-auto w-full mt-20 text-center space-y-4">
+        <h1 className="text-3xl font-bold">Analysis in Progress...</h1>
+        <p className="text-gray-400">ID: {analysisId}</p>
+        <p className="text-primary animate-pulse">The AI is currently analyzing your media. Please refresh this page in a moment.</p>
+      </div>
+    );
+  }
+
+  if (apiData.status === "error") {
+    return (
+      <div className="max-w-6xl mx-auto w-full mt-20 text-center space-y-4">
+        <h1 className="text-3xl font-bold text-red-500">Analysis Failed</h1>
+        <p className="text-gray-400">ID: {analysisId}</p>
+        <div className="bg-red-500/10 text-red-400 p-4 rounded-lg inline-block border border-red-500/20">
+          {apiData.error_message || "An unknown error occurred during processing."}
+        </div>
+        <div className="mt-6">
+           <Link href="/analyze" className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover">Try Again</Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Success state mappings
+  const result = apiData.result || {};
   const mockData = {
     id: analysisId,
-    prediction: "fake",
-    confidence: 0.89,
-    model_name: "EfficientNet-V2-Ensemble",
-    media_type: "video",
-    processing_time_ms: 1250,
+    prediction: result.prediction || "uncertain",
+    confidence: result.confidence || 0.0,
+    model_name: result.model_name || "Unknown",
+    media_type: apiData.media_type || "video",
+    processing_time_ms: result.processing_time_ms || 0,
     evidence: {
-      suspicious_regions: [[10, 20, 40, 50], [60, 10, 80, 40]],
-      suspicious_frames: [15, 30, 45, 120, 150],
-      note: "Facial blending artifacts detected in frames 15-45."
+      suspicious_regions: result.evidence?.suspicious_regions || [],
+      suspicious_frames: result.evidence?.suspicious_frames || [],
+      note: result.evidence?.note || result.evidence?.error || "Analysis completed successfully."
     },
     metadata: {
-      file_size: "14.2 MB",
-      format: "MP4",
-      codec: "H.264",
-      duration: "00:00:15",
-      resolution: "1920x1080"
+      filename: apiData.filename || "Unknown"
     }
   };
 

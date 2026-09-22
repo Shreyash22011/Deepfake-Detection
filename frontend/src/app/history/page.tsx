@@ -1,12 +1,34 @@
 import Link from "next/link";
 
-export default function HistoryPage() {
-  const mockHistory = [
-    { id: 'an-1234', date: '2026-09-20', type: 'video', prediction: 'fake', confidence: 0.89 },
-    { id: 'an-1235', date: '2026-09-19', type: 'image', prediction: 'real', confidence: 0.95 },
-    { id: 'an-1236', date: '2026-09-18', type: 'audio', prediction: 'uncertain', confidence: 0.55 },
-    { id: 'an-1237', date: '2026-09-17', type: 'video', prediction: 'real', confidence: 0.99 },
-  ];
+interface AnalysisRecord {
+  id: string;
+  created_at: string;
+  media_type: string;
+  result?: {
+    prediction: string;
+    confidence: number;
+  };
+}
+
+export default async function HistoryPage() {
+  let mockHistory: { id: string, date: string, type: string, prediction: string, confidence: number }[] = [];
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+  try {
+    const res = await fetch(`${API_URL}/api/analyses`, { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      mockHistory = data.map((item: AnalysisRecord) => ({
+        id: item.id,
+        date: new Date(item.created_at).toISOString().split('T')[0],
+        type: item.media_type,
+        prediction: item.result?.prediction || 'pending/error',
+        confidence: item.result?.confidence || 0,
+      }));
+    }
+  } catch (e) {
+    console.error("Failed to fetch history");
+  }
 
   return (
     <div className="max-w-4xl mx-auto w-full mt-8">
