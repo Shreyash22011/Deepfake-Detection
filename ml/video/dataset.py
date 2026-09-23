@@ -59,6 +59,8 @@ class DeepfakeVideoDataset(Dataset):
             print(f"Warning: Failed to read {video_path}: {e}")
             sampled_frames = []
             
+        self.face_detector.reset_tracking()
+            
         sequence = []
         for frame_idx, frame_rgb in sampled_frames:
             # Detect and crop face
@@ -82,6 +84,52 @@ class DeepfakeVideoDataset(Dataset):
                 padding = torch.zeros((pad_size, 3, self.image_size[1], self.image_size[0]))
                 sequence_tensor = torch.cat([sequence_tensor, padding], dim=0)
                 
+        return sequence_tensor, label
+
+class CachedFeatureDataset(Dataset):
+    def __init__(self, data_dir: str, device: str = 'cpu'):
+        """
+        Assumes directory structure:
+        data_dir/
+            real/
+                vid1.pt
+                vid2.pt
+            fake/
+                vid3.pt
+                ...
+        """
+        super().__init__()
+        self.data_dir = data_dir
+        self.device = device
+        self.features: List[Tuple[str, int]] = []
+        self._load_dataset()
+        
+    def _load_dataset(self):
+        real_dir = os.path.join(self.data_dir, 'real')
+        fake_dir = os.path.join(self.data_dir, 'fake')
+        
+        if os.path.exists(real_dir):
+            for path in glob.glob(os.path.join(real_dir, '*.pt')):
+                self.features.append((path, 0)) # 0 = real
+                
+        if os.path.exists(fake_dir):
+            for path in glob.glob(os.path.join(fake_dir, '*.pt')):
+                self.features.append((path, 1)) # 1 = fake
+                
+    def __len__(self) -> int:
+        return len(self.features)
+        
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, int]:
+        feature_path, label = self.features[idx]
+        
+        try:
+            # Shape is expected to be (max_frames, 512)
+            sequence_tensor = torch.load(feature_path, map_location='cpu', weights_only=True)
+        except Exception as e:
+            print(f"Warning: Failed to read {feature_path}: {e}")
+            # Fallback to zero tensor to avoid crashing
+            sequence_tensor = torch.zeros((30, 512))
+            
         return sequence_tensor, label
 
 if __name__ == "__main__":

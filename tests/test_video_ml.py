@@ -25,7 +25,8 @@ def test_model_forward_pass():
     
     assert video_prob.shape == (2, 1), "Video probability shape mismatch"
     assert frame_probs.shape == (2, 3, 1), "Frame probabilities shape mismatch"
-    assert torch.all((video_prob >= 0.0) & (video_prob <= 1.0)), "Probabilities must be in [0, 1]"
+    # Note: Outputs are now raw logits, not probabilities
+    assert torch.is_tensor(video_prob), "Video logits must be a tensor"
 
 def test_face_detector_fallback():
     detector = FaceDetector(device='cpu', image_size=(224, 224))
@@ -39,9 +40,44 @@ def test_face_detector_fallback():
     assert tensor.shape == (3, 224, 224), "Fallback crop shape mismatch"
 
 def test_group_suspicious_frames():
+    # 1. consecutive original indices
+    indices = [0, 1, 2, 3]
+    actual = [0, 1, 2, 3]
+    ranges = group_suspicious_frames(indices, actual)
+    assert len(ranges) == 1
+    assert ranges[0] == {"start_frame": 0, "end_frame": 3}
+    
+    # 2. sampled indices
+    indices = [0, 5, 10, 15]
+    actual = [0, 5, 10, 15, 20, 25, 30, 35]
+    ranges = group_suspicious_frames(indices, actual)
+    assert len(ranges) == 1
+    assert ranges[0] == {"start_frame": 0, "end_frame": 15}
+    
+    # 3. separated suspicious sampled indices
+    indices = [0, 5, 15, 20]
+    actual = [0, 5, 10, 15, 20, 25, 30, 35]
+    ranges = group_suspicious_frames(indices, actual)
+    assert len(ranges) == 2
+    assert ranges[0] == {"start_frame": 0, "end_frame": 5}
+    assert ranges[1] == {"start_frame": 15, "end_frame": 20}
+    
+    # 4. a single suspicious frame
+    indices = [15]
+    actual = [0, 5, 10, 15, 20, 25, 30, 35]
+    ranges = group_suspicious_frames(indices, actual)
+    assert len(ranges) == 1
+    assert ranges[0] == {"start_frame": 15, "end_frame": 15}
+    
+    # 5. empty suspicious frames
+    indices = []
+    actual = [0, 5, 10, 15, 20, 25, 30, 35]
+    ranges = group_suspicious_frames(indices, actual)
+    assert len(ranges) == 0
+    
+    # Legacy fallback test (no actual array provided)
     indices = [1, 2, 3, 5, 8, 9]
     ranges = group_suspicious_frames(indices)
-    
     assert len(ranges) == 3
     assert ranges[0] == {"start_frame": 1, "end_frame": 3}
     assert ranges[1] == {"start_frame": 5, "end_frame": 5}

@@ -7,11 +7,11 @@ class DeepfakeVideoModel(nn.Module):
         super(DeepfakeVideoModel, self).__init__()
         
         # Load config or use defaults
-        import yaml
-        import os
+        # Load config
+        from .preprocessing import load_config
         try:
-            with open(config_path, 'r') as f:
-                config = yaml.safe_load(f).get("model", {})
+            full_config = load_config(config_path)
+            config = full_config.get("model", {})
         except Exception:
             config = {}
             
@@ -27,6 +27,16 @@ class DeepfakeVideoModel(nn.Module):
             # Remove the final classification layer (fc) to just get feature maps
             self.feature_dim = resnet.fc.in_features
             self.backbone = nn.Sequential(*list(resnet.children())[:-1])
+            
+            # Freeze the backbone for transfer learning
+            for param in self.backbone.parameters():
+                param.requires_grad = False
+                
+            # Conditionally unfreeze layer4
+            if config.get("fine_tune_layer4", False):
+                # layer4 is at index 7 in the backbone sequential
+                for param in self.backbone[7].parameters():
+                    param.requires_grad = True
         else:
             raise ValueError(f"Unsupported backbone: {backbone_name}")
             
@@ -45,8 +55,7 @@ class DeepfakeVideoModel(nn.Module):
             nn.Linear(hidden_size, 64),
             nn.ReLU(),
             nn.Dropout(dropout_rate),
-            nn.Linear(64, 1),
-            nn.Sigmoid()
+            nn.Linear(64, 1)
         )
         
         # Video-level classifier
@@ -54,16 +63,15 @@ class DeepfakeVideoModel(nn.Module):
             nn.Linear(hidden_size, 64),
             nn.ReLU(),
             nn.Dropout(dropout_rate),
-            nn.Linear(64, 1),
-            nn.Sigmoid()  # Outputs probability of FAKE
+            nn.Linear(64, 1)
         )
 
     def forward(self, x):
         """
         x shape: (batch_size, seq_len, C, H, W)
         Returns:
-            video_prob: probability of video being fake (batch_size, 1)
-            frame_probs: probability of each frame being fake (batch_size, seq_len, 1)
+            video_prob: probability logits of video being fake (batch_size, 1)
+            frame_probs: probability logits of each frame being fake (batch_size, seq_len, 1)
         """
         batch_size, seq_len, c, h, w = x.size()
         
@@ -84,6 +92,23 @@ class DeepfakeVideoModel(nn.Module):
         # h_n shape: (num_layers, batch_size, hidden_size) -> take the last layer
         last_hidden = h_n[-1, :, :] # (batch_size, hidden_size)
         video_prob = self.video_classifier(last_hidden) # (batch_size, 1)
+        
+        return video_prob, frame_probs
+
+    def forward_features(self, features):
+        """
+        features shape: (batch_size, seq_len, 512)
+        Bypasses the CNN backbone for cached feature sequences.
+        """
+        # Pass through temporal model
+        lstm_out, (h_n, c_n) = self.lstm(features)
+        
+        # Frame-level predictions
+        frame_probs = self.frame_classifier(lstm_out)
+        
+        # Video-level prediction
+        last_hidden = h_n[-1, :, :]
+        video_prob = self.video_classifier(last_hidden)
         
         return video_prob, frame_probs
 

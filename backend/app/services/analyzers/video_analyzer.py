@@ -18,11 +18,12 @@ class VideoAnalyzer(BaseAnalyzer):
         loop = asyncio.get_running_loop()
         
         # Determine the path to config.yaml relative to ml module
-        config_path = os.path.join(root_dir, "ml", "video", "config.yaml")
+        config_path = os.path.join(root_dir, "ml", "video", "finetune_config.yaml")
+        checkpoint_path = os.path.join(root_dir, "ml", "video", "checkpoints", "best_finetuned_model.pth")
         
         result_dict = await loop.run_in_executor(
             None, 
-            lambda: run_inference(file_path, checkpoint_path=None, config_path=config_path)
+            lambda: run_inference(file_path, checkpoint_path=checkpoint_path, config_path=config_path)
         )
 
         if result_dict.get("prediction") == "error":

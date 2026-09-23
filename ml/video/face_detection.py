@@ -8,6 +8,7 @@ class FaceDetector:
     def __init__(self, device='cpu', image_size=(224, 224), margin=0.2):
         self.device = torch.device(device)
         self.image_size = image_size
+        self.target_box = None
         
         # Calculate margin in pixels assuming an average initial face crop size around 160
         margin_px = int(160 * margin)
@@ -25,17 +26,47 @@ class FaceDetector:
             keep_all=True  # We will manually select the largest face
         )
         
-    def _select_largest_face(self, boxes: np.ndarray) -> np.ndarray:
-        """Select the largest bounding box if multiple faces are detected."""
+    def reset_tracking(self):
+        """Reset the face tracking state between videos."""
+        self.target_box = None
+
+    def _calculate_iou(self, boxA: np.ndarray, boxB: np.ndarray) -> float:
+        """Calculate Intersection over Union (IoU) of two bounding boxes."""
+        xA = max(boxA[0], boxB[0])
+        yA = max(boxA[1], boxB[1])
+        xB = min(boxA[2], boxB[2])
+        yB = min(boxA[3], boxB[3])
+
+        interArea = max(0, xB - xA) * max(0, yB - yA)
+        if interArea == 0:
+            return 0.0
+
+        boxAArea = (boxA[2] - boxA[0]) * (boxA[3] - boxA[1])
+        boxBArea = (boxB[2] - boxB[0]) * (boxB[3] - boxB[1])
+
+        iou = interArea / float(boxAArea + boxBArea - interArea)
+        return iou
+
+    def _select_target_face(self, boxes: np.ndarray) -> np.ndarray:
+        """Select the target face using IoU tracking, falling back to max area."""
         if boxes is None or len(boxes) == 0:
             return None
             
         if len(boxes) == 1:
+            self.target_box = boxes[0]
             return boxes[0]
             
+        if self.target_box is not None:
+            ious = [self._calculate_iou(self.target_box, box) for box in boxes]
+            best_idx = np.argmax(ious)
+            if ious[best_idx] > 0.1:
+                self.target_box = boxes[best_idx]
+                return boxes[best_idx]
+                
         # Calculate areas: (x2 - x1) * (y2 - y1)
         areas = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
         largest_idx = np.argmax(areas)
+        self.target_box = boxes[largest_idx]
         return boxes[largest_idx]
 
     def detect_and_crop(self, frame_rgb: np.ndarray) -> torch.Tensor:
@@ -51,8 +82,8 @@ class FaceDetector:
         boxes, probs = self.mtcnn.detect(pil_image)
         
         if boxes is not None and len(boxes) > 0:
-            # Select the largest face
-            largest_box = self._select_largest_face(boxes)
+            # Select the target face using tracking
+            largest_box = self._select_target_face(boxes)
             
             # Use MTCNN's internal extract method to handle margin and resize
             # MTCNN extract returns a normalized tensor

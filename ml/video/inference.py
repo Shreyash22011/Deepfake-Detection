@@ -8,25 +8,48 @@ from .face_detection import FaceDetector
 from .model import DeepfakeVideoModel
 from .train import get_device, load_config
 
-def group_suspicious_frames(suspicious_indices: List[int]) -> List[Dict[str, int]]:
+def group_suspicious_frames(suspicious_indices: List[int], actual_frame_indices: List[int] = None) -> List[Dict[str, int]]:
     """Group consecutive suspicious frame indices into ranges."""
     if not suspicious_indices:
         return []
         
-    ranges = []
-    start = suspicious_indices[0]
-    prev = start
-    
-    for idx in suspicious_indices[1:]:
-        if idx == prev + 1:
-            prev = idx
-        else:
-            ranges.append({"start_frame": start, "end_frame": prev})
-            start = idx
-            prev = idx
-            
-    ranges.append({"start_frame": start, "end_frame": prev})
-    return ranges
+    if actual_frame_indices:
+        # Map original frame index to its position in the sampled sequence
+        seq_map = {orig: seq for seq, orig in enumerate(actual_frame_indices)}
+        # Sort by sequence index
+        sorted_suspicious = sorted(suspicious_indices, key=lambda x: seq_map.get(x, x))
+        
+        ranges = []
+        start_orig = sorted_suspicious[0]
+        prev_orig = start_orig
+        
+        for idx_orig in sorted_suspicious[1:]:
+            # Check if they are adjacent in the actual sampled sequence
+            if seq_map.get(idx_orig, -1) == seq_map.get(prev_orig, -2) + 1:
+                prev_orig = idx_orig
+            else:
+                ranges.append({"start_frame": start_orig, "end_frame": prev_orig})
+                start_orig = idx_orig
+                prev_orig = idx_orig
+                
+        ranges.append({"start_frame": start_orig, "end_frame": prev_orig})
+        return ranges
+    else:
+        # Fallback if no actual_frame_indices provided (legacy or un-strided)
+        ranges = []
+        start = suspicious_indices[0]
+        prev = start
+        
+        for idx in suspicious_indices[1:]:
+            if idx == prev + 1:
+                prev = idx
+            else:
+                ranges.append({"start_frame": start, "end_frame": prev})
+                start = idx
+                prev = idx
+                
+        ranges.append({"start_frame": start, "end_frame": prev})
+        return ranges
 
 def run_inference(video_path: str, checkpoint_path: str = None, config_path: str = "config.yaml") -> Dict[str, Any]:
     """
@@ -97,6 +120,8 @@ def run_inference(video_path: str, checkpoint_path: str = None, config_path: str
     sequence = []
     actual_frame_indices = []
     
+    face_detector.reset_tracking()
+    
     for frame_idx, frame_rgb in sampled_frames:
         face_tensor, _ = face_detector.detect_and_crop(frame_rgb)
         sequence.append(face_tensor)
@@ -117,7 +142,9 @@ def run_inference(video_path: str, checkpoint_path: str = None, config_path: str
     
     # 3. Model Forward Pass
     with torch.no_grad():
-        video_prob, frame_probs = model(sequence_tensor)
+        video_prob_logits, frame_probs_logits = model(sequence_tensor)
+        video_prob = torch.sigmoid(video_prob_logits)
+        frame_probs = torch.sigmoid(frame_probs_logits)
         
     video_fake_prob = video_prob.item()
     confidence = max(video_fake_prob, 1 - video_fake_prob)
@@ -139,7 +166,7 @@ def run_inference(video_path: str, checkpoint_path: str = None, config_path: str
         if prob > threshold:
             suspicious_frames.append(orig_idx)
             
-    suspicious_ranges = group_suspicious_frames(suspicious_frames)
+    suspicious_ranges = group_suspicious_frames(suspicious_frames, actual_frame_indices)
     
     processing_time = int((time.time() - start_time) * 1000)
     
