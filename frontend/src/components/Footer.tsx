@@ -1,8 +1,13 @@
 export default function Footer() {
   return (
-    <footer className="border-t border-border mt-auto">
-      <div className="container mx-auto px-4 py-6 text-center text-sm text-gray-400">
-        <p>&copy; {new Date().getFullYear()} AI Media Authenticity Platform. Academic Project.</p>
+    <footer className="border-t border-border bg-background mt-auto">
+      <div className="max-w-7xl mx-auto px-5 sm:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <p className="text-sm text-muted">
+          AI Media Authenticity Platform &mdash; Academic Research Project
+        </p>
+        <p className="text-xs text-muted">
+          &copy; {new Date().getFullYear()}
+        </p>
       </div>
     </footer>
   );

@@ -1,19 +1,49 @@
+'use client';
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+
+const NAV_LINKS = [
+  { href: '/analyze', label: 'Analyze' },
+  { href: '/history', label: 'History' },
+  { href: '/dashboard', label: 'Dashboard' },
+];
 
 export default function Navbar() {
+  const pathname = usePathname();
+
   return (
-    <nav className="bg-panel border-b border-border shadow-sm">
-      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        <Link href="/" className="text-xl font-bold tracking-tight flex items-center gap-2">
-          <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center font-bold text-white">AM</div>
-          <span>Authenticity Platform</span>
+    <header className="sticky top-0 z-50 bg-surface/95 backdrop-blur border-b border-border">
+      <div className="max-w-7xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
+        {/* Logo / Brand */}
+        <Link
+          href="/"
+          className="text-[15px] font-semibold text-foreground tracking-tight hover:text-primary transition-colors"
+        >
+          AI Media Authenticity
         </Link>
-        <div className="flex gap-6 items-center">
-          <Link href="/analyze" className="text-sm font-medium hover:text-primary transition-colors">Analyze</Link>
-          <Link href="/history" className="text-sm font-medium hover:text-primary transition-colors">History</Link>
-          <Link href="/dashboard" className="text-sm font-medium hover:text-primary transition-colors">Dashboard</Link>
-        </div>
+
+        {/* Navigation */}
+        <nav className="flex items-center gap-1" aria-label="Primary navigation">
+          {NAV_LINKS.map(({ href, label }) => {
+            const isActive =
+              href === '/' ? pathname === '/' : pathname.startsWith(href);
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'text-primary bg-primary/8'
+                    : 'text-accent hover:text-foreground hover:bg-surface-2'
+                }`}
+              >
+                {label}
+              </Link>
+            );
+          })}
+        </nav>
       </div>
-    </nav>
+    </header>
   );
 }

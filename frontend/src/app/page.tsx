@@ -1,40 +1,16 @@
 import Link from "next/link";
 
 export default function Home() {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[80vh] text-center px-4">
-      <div className="max-w-3xl space-y-8">
-        <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight">
-          AI Media <span className="text-primary">Authenticity</span> Platform
-        </h1>
-        <p className="text-xl text-gray-400">
-          Advanced deepfake detection and forensic classification using multi-modal deep learning techniques. Ensure the integrity of digital media.
-        </p>
-        
-        <div className="flex justify-center gap-4 py-4">
-          <div className="bg-panel px-6 py-3 rounded-lg border border-border flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-            <span className="font-medium text-sm">Image Analysis</span>
-          </div>
-          <div className="bg-panel px-6 py-3 rounded-lg border border-border flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-accent animate-pulse"></span>
-            <span className="font-medium text-sm">Video Forensics</span>
-          </div>
-          <div className="bg-panel px-6 py-3 rounded-lg border border-border flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-success animate-pulse"></span>
-            <span className="font-medium text-sm">Audio Detection</span>
-          </div>
-        </div>
-
-        <div className="pt-8">
-          <Link 
-            href="/analyze" 
-            className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium text-white bg-primary hover:bg-primary-hover rounded-xl shadow-lg shadow-primary/20 transition-all hover:scale-105"
-          >
-            Start Analysis
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
+  const capabilities = [
+    ["JPG, PNG, WEBP", "Image analysis", "Review synthetic faces, generated imagery, and AI-edited photographs."],
+    ["MP4, MOV, AVI", "Video forensics", "Inspect frame-level evidence from the existing temporal analysis pipeline."],
+    ["MP3, WAV, M4A", "Audio detection", "Submit supported recordings for the platform's audio classification workflow."],
+  ];
+  return <div className="max-w-7xl mx-auto px-5 sm:px-8 w-full">
+    <section className="py-16 md:py-20 grid lg:grid-cols-[1.15fr_.85fr] gap-12 items-center">
+      <div className="max-w-2xl"><div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-semibold text-primary mb-6"><span className="w-1.5 h-1.5 rounded-full bg-primary" />Media authenticity analysis</div><h1 className="text-4xl md:text-[46px] font-bold text-foreground leading-[1.1] mb-5 tracking-[-0.035em]">Make a clearer call on digital media.</h1><p className="text-base text-accent leading-relaxed mb-8 max-w-xl">Analyze images, video, and audio for signs of synthetic or manipulated content with a focused deep-learning workflow built for forensic review.</p><div className="flex flex-wrap gap-3"><Link href="/analyze" className="inline-flex items-center gap-2 px-5 py-3 bg-primary text-white text-sm font-semibold rounded-md hover:bg-primary-hover shadow-sm">Analyze media <span aria-hidden="true">→</span></Link><Link href="/history" className="inline-flex items-center px-5 py-3 text-sm font-medium text-accent border border-border bg-surface rounded-md hover:border-accent hover:text-foreground">View history</Link></div></div>
+      <div className="bg-surface border border-border rounded-xl p-6 shadow-sm"><div className="flex items-center justify-between border-b border-border pb-4 mb-5"><p className="text-xs font-semibold uppercase tracking-widest text-muted">Review flow</p><span className="text-xs font-mono text-muted">01 / 03</span></div><div className="space-y-4"><div className="flex gap-3"><span className="text-primary font-mono text-sm">01</span><div><p className="font-semibold text-sm">Upload source media</p><p className="text-sm text-muted">A single file, up to 50 MB.</p></div></div><div className="h-5 border-l border-dashed border-border ml-1.5" /><div className="flex gap-3"><span className="text-primary font-mono text-sm">02</span><div><p className="font-semibold text-sm">Run classification</p><p className="text-sm text-muted">The existing model processes the submission.</p></div></div><div className="h-5 border-l border-dashed border-border ml-1.5" /><div className="flex gap-3"><span className="text-primary font-mono text-sm">03</span><div><p className="font-semibold text-sm">Inspect evidence</p><p className="text-sm text-muted">Review confidence and available frame evidence.</p></div></div></div></div>
+    </section>
+    <section className="pb-16"><div className="flex items-end justify-between mb-5"><div><p className="text-xs font-semibold uppercase tracking-widest text-muted mb-2">Workflow coverage</p><h2 className="text-xl font-semibold">One place to review your media</h2></div><p className="hidden md:block text-sm text-muted">Upload · analyze · inspect</p></div><div className="grid grid-cols-1 md:grid-cols-3 gap-4">{capabilities.map(([tag, title, description]) => <div key={title} className="bg-surface border border-border rounded-lg p-6"><p className="text-xs font-semibold uppercase tracking-widest text-primary mb-4">{tag}</p><h3 className="text-base font-semibold text-foreground mb-2">{title}</h3><p className="text-sm text-accent leading-relaxed">{description}</p></div>)}</div></section>
+  </div>;
 }

@@ -4,8 +4,8 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
-  title: "AI Media Authenticity Platform",
-  description: "Deepfake Detection and Classification for Image, Video, and Audio",
+  title: "AI Media Authenticity | Forensic Analysis",
+  description: "Deepfake detection and media authenticity analysis.",
 };
 
 export default function RootLayout({
@@ -15,9 +15,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased min-h-screen flex flex-col">
+      <body className="antialiased min-h-screen flex flex-col bg-background text-foreground">
         <Navbar />
-        <main className="flex-1 flex flex-col container mx-auto px-4 py-8">
+        <main className="flex-1 flex flex-col">
           {children}
         </main>
         <Footer />

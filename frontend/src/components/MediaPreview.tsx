@@ -1,19 +1,59 @@
-export default function MediaPreview({ type }: { type: string, url: string }) {
-  // Mock preview implementation
-  return (
-    <div className="bg-panel border border-border rounded-xl overflow-hidden aspect-video flex items-center justify-center relative">
-      <div className="absolute inset-0 flex flex-col items-center justify-center opacity-30 text-gray-400">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-16 h-16 mb-2">
-          {type === 'video' ? (
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h7.5c.621 0 1.125-.504 1.125-1.125m-9.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-7.5A1.125 1.125 0 0112 18.375m9.75-12.75c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125m19.5 0v1.5c0 .621-.504 1.125-1.125 1.125M2.25 5.625v1.5c0 .621.504 1.125 1.125 1.125m0 0h17.25m-17.25 0h7.5c.621 0 1.125.504 1.125 1.125M3.375 8.25c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m17.25-3.75h-7.5c-.621 0-1.125.504-1.125 1.125m8.625-1.125c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125M12 10.875v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 10.875c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125M13.125 12h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125M20.625 12c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5M12 14.625v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 14.625c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125m0 1.5v-1.5m0 0c0-.621.504-1.125 1.125-1.125m0 0h7.5" />
-          ) : type === 'audio' ? (
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
-          ) : (
-            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-          )}
-        </svg>
-        <p className="uppercase tracking-widest">{type} PREVIEW</p>
+'use client';
+
+import { useState } from 'react';
+
+interface MediaPreviewProps {
+  type: string;
+  analysisId?: string;
+}
+
+export default function MediaPreview({ type, analysisId }: MediaPreviewProps) {
+  const [objectUrl] = useState<string | null>(() => {
+    if (typeof window === 'undefined' || !analysisId) return null;
+    return sessionStorage.getItem(`media_${analysisId}`);
+  });
+
+  if (!objectUrl) {
+    return (
+      <div className="border border-border rounded-lg bg-surface flex items-center justify-center py-12 px-6 text-center">
+        <div>
+          <p className="text-sm font-medium text-foreground mb-1">Preview not available</p>
+          <p className="text-xs text-muted max-w-xs">
+            The original file is only available within the browser session where it was uploaded.
+          </p>
+        </div>
       </div>
+    );
+  }
+
+  if (type === 'video') {
+    return (
+      <div className="bg-foreground/5 border border-border rounded-lg overflow-hidden">
+        <video
+          src={objectUrl}
+          controls
+          className="w-full h-auto max-h-[420px] block"
+          style={{ aspectRatio: '16 / 9', objectFit: 'contain', backgroundColor: '#111' }}
+        />
+      </div>
+    );
+  }
+
+  if (type === 'audio') {
+    return (
+      <div className="border border-border rounded-lg bg-surface p-6">
+        <audio src={objectUrl} controls className="w-full" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="border border-border rounded-lg overflow-hidden bg-surface-2">
+      <img
+        src={objectUrl}
+        alt="Uploaded media"
+        className="w-full h-auto max-h-[420px] object-contain block"
+      />
     </div>
   );
 }
